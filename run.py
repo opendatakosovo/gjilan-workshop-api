@@ -14,9 +14,7 @@ app = Flask(__name__)
 
 @app.route("/")
 def hello():
-    mesazhi = "Hej un jam mesazhi qe vij nga backendi"
-    fjalori = {"po": "YES", "jo": "NO"}
-    return render_template('index.html', mesazhi=mesazhi, fjalori=fjalori)
+    return "Hello World"
 
 @app.route('/harta')
 def harta():
@@ -65,14 +63,42 @@ def harta():
                 }
             }
         ])
-    resp = Response(response=json_util.dumps(rezultati),mimetype="application/json")
+    resp = Response(response=json_util.dumps(rezultati['result']),
+        mimetype="application/json")
 
     return resp
 
+
 @app.route('/pie')
 def pie():
-    rezultati = {"Pune":100000,"Furnizim":50000,"Sherbime":10000}
-    return render_template('pie.html',rezultati = rezultati)
+    rezultati = collection.aggregate([
+            {"$match": {
+                "komuna.slug": "gjilan",
+                "viti": 2013
+            }
+            },
+            {"$group": {
+                "_id": {
+                    "tipi": "$tipi"
+                },
+                "shumaProkurimit": {
+                    "$sum": "$kontrata.vlera"
+                }
+            }
+
+            },
+            {"$sort": {
+                "_id.tipi": 1
+            }},
+            {"$project": {
+                "_id": 0,
+                "tipi": "$_id.tipi",
+                "shuma": "$shumaProkurimit"
+            }}
+        ])
+
+    return Response(response=json_util.dumps(rezultati['result']), mimetype='application/json')
+
 
 @app.route("/gilani/<string:emri>")
 def gilani(emri):
